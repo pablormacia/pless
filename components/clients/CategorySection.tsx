@@ -24,7 +24,7 @@ export function CategorySection({
         <div className="flex items-center gap-3">
           <div className="relative w-12 h-12 rounded-lg overflow-hidden">
             <Image
-              src={category.image}
+              src={category.image_url}
               alt={category.name}
               fill
               className="object-cover"

@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useEffect} from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { CategorySection } from "@/components/clients/CategorySection";
 import { Grid, List } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
-import mock from "@/data/mock.json";
 
 
 export default function ClientPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [openCategory, setOpenCategory] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
 
-    const supabase = createClient(
+  const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
@@ -24,26 +27,79 @@ export default function ClientPage() {
     async function loadImage() {
       const { data } = supabase.storage
         .from("businesses")
-        .getPublicUrl("c8e43f7a-331d-49bd-ac63-a88a2d69b600/header_pless_resto_demo.webp");
+        .getPublicUrl(`${businessId}/header_pless_resto_demo.webp`);
 
       setImageUrl(data.publicUrl);
     }
 
     loadImage();
   }, []);
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("categories")
+        .select(`
+        id,
+        name,
+        sort_order,
+        image_url,
+        products (
+          id,
+          name,
+          description,
+          price,
+          image_url,
+          available
+        )
+      `)
+        .eq("business_id", businessId)
+        .order("sort_order", { ascending: true });
+
+      if (error) {
+        console.error("Error:", error);
+        setLoading(false);
+        return;
+      }
+
+      // Filtrar productos disponibles (ya vienen dentro de cada categoría)
+      const cleaned = data.map(cat => ({
+        ...cat,
+        image_url: cat.image_url
+          ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/businesses/${businessId}/categories/${cat.id}/${cat.image_url}`
+          : null,
+        products: cat.products
+          .filter(p => p.available)
+          .map(p => ({
+            ...p,
+            image_url: p.image_url
+              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/businesses/${businessId}/products/${p.id}/${p.image_url}`
+              : null
+          }))
+      }));
+
+      setCategories(cleaned);
+      setLoading(false);
+    }
+
+    loadData();
+  }, []);
+
   return (
     <main>
       {/* Header */}
       <div className="relative h-48 w-full">
         {imageUrl && (
-        <Image
-          src={imageUrl}
-          alt="Pless Restó Demo"
-          fill
-          className="object-cover brightness-75"
-          priority
-        />
-      )}
+          <Image
+            src={imageUrl}
+            alt="Pless Restó Demo"
+            fill
+            className="object-cover brightness-75"
+            priority
+          />
+        )}
         <div className="absolute inset-0 flex items-center justify-center text-white">
           <h1 className="text-3xl font-bold drop-shadow-lg capitalize">
             Pless Restó Demo
@@ -74,17 +130,21 @@ export default function ClientPage() {
 
       {/* Categorías */}
       <div className="p-4 space-y-4">
-        {mock.map((cat) => (
-          <CategorySection
-            key={cat.id}
-            category={cat}
-            view={view}
-            isOpen={openCategory === cat.id}
-            onToggle={() =>
-              setOpenCategory(openCategory === cat.id ? null : cat.id)
-            }
-          />
-        ))}
+        {loading ? (
+          <p className="text-center text-gray-500">Cargando menú...</p>
+        ) : (
+          categories.map((cat) => (
+            <CategorySection
+              key={cat.id}
+              category={cat}
+              view={view}
+              isOpen={openCategory === cat.id}
+              onToggle={() =>
+                setOpenCategory(openCategory === cat.id ? null : cat.id)
+              }
+            />
+          ))
+        )}
       </div>
     </main>
   );
