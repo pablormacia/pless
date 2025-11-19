@@ -118,3 +118,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes cartTap {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15) rotate(-1deg); }
+  60% { transform: scale(1.1) rotate(1deg); }
+  100% { transform: scale(1); }
+}
+
+.button-tap {
+  animation: cartTap 0.22s ease-out;
+}
