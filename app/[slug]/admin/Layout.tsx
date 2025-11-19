@@ -1,6 +1,5 @@
 import './globals.css'
-import AdminSidebar from '@/components/AdminSidebar'
-
+import AdminSidebar from '@/components/admin/AdminSidebar';
 
 export const revalidate = 0
 
