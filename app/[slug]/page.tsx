@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CategorySection } from "@/components/clients/CategorySection";
 import { Grid, List } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import CartButton from "@/components/clients/CartButton";
 
 
 export default function ClientPage() {
@@ -101,6 +102,15 @@ export default function ClientPage() {
           />
         )}
         <div className="absolute inset-0 flex items-center justify-center text-white">
+
+          <Image
+            src='/pless_logo_grays.png'
+            alt="Pless Restó Demo"
+            width={45}
+            height={45}
+            className="object-cover brightness-75 m-1"
+            priority
+          />
           <h1 className="text-3xl font-bold drop-shadow-lg capitalize">
             Pless Restó Demo
           </h1>
@@ -110,20 +120,26 @@ export default function ClientPage() {
       {/* Controles */}
       <div className="flex justify-between items-center px-4 py-3 border-b bg-white sticky top-0 z-10">
         <h2 className="font-semibold text-lg">Categorías</h2>
+
         <div className="flex gap-2">
           <Button
             variant={view === "grid" ? "default" : "outline"}
-            size="icon"
+            size="sm"
             onClick={() => setView("grid")}
+            className="flex items-center gap-1"
           >
             <Grid className="h-4 w-4" />
+            <span>Modo menú</span>
           </Button>
+
           <Button
             variant={view === "list" ? "default" : "outline"}
-            size="icon"
+            size="sm"
             onClick={() => setView("list")}
+            className="flex items-center gap-1"
           >
             <List className="h-4 w-4" />
+            <span>Modo pedido</span>
           </Button>
         </div>
       </div>
@@ -146,6 +162,7 @@ export default function ClientPage() {
           ))
         )}
       </div>
+      {view === "list" && <CartButton view={view} />}
     </main>
   );
 }
