@@ -21,7 +21,6 @@ export default function ClientLayout({
         }}
       />
       <CartDrawer />
-      <h2>HOLA SOY OTRO LAYOUT</h2>
     </div>
   );
 }
