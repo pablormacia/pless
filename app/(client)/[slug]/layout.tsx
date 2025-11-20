@@ -10,12 +10,11 @@ export default function ClientLayout({
     <div className="min-h-screen bg-slate-50 text-slate-900 antialiased">
       {children}
       <Toaster
-        position="bottom-left"       // aparece desde la izquierda
-        offset="32px"                // separación desde el borde (opcional)
+        position="bottom-center"              
         toastOptions={{
           style: {
-            width: "60%",            // ocupa el 60% del ancho (aprox. mitad de pantalla)
-            maxWidth: "400px",       // límite para que no quede gigante en desktop
+            width: "60%",            
+            maxWidth: "400px", 
           },
           
         }}

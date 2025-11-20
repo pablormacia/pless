@@ -8,7 +8,7 @@ import {
     SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, ArrowLeft, Trash } from "lucide-react";
 import { useCartStore } from "@/stores/cart";
 import { toast } from "sonner";
 
@@ -41,11 +41,20 @@ const CartDrawer = () => {
                         items.map((item) => (
                             <div
                                 key={item.id}
-                                className="border rounded-md px-3 py-2 flex justify-between items-center"
+                                className="border rounded-md px-3 py-2 flex items-center justify-between"
                             >
-                                <div>
-                                    <p className="font-medium">{item.name}</p>
-                                    <p className="text-sm text-gray-500">
+                                {item.image && (
+                                    <div className="w-8 h-8 mr-1 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                                        <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            className="object-cover w-full h-full"
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex-1 flex flex-col justify-center">
+                                    <p className="font-medium leading-tight">{item.name}</p>
+                                    <p className="text-sm text-gray-500 leading-tight">
                                         ${item.price.toLocaleString()}
                                     </p>
                                 </div>
@@ -56,8 +65,9 @@ const CartDrawer = () => {
                                         size="icon"
                                         variant="outline"
                                         className="h-8 w-8"
+                                        disabled={item.quantity === 1}
                                         onClick={() =>
-                                            updateQuantity(item.id, item.quantity - 1)
+                                            item.quantity > 1 && updateQuantity(item.id, item.quantity - 1)
                                         }
                                     >
                                         <Minus size={16} />
@@ -81,9 +91,9 @@ const CartDrawer = () => {
 
                                 <button
                                     onClick={() => removeItem(item.id)}
-                                    className="text-red-500 text-xs ml-2"
+                                    className="text-red-500 ml-2 flex items-center"
                                 >
-                                    Quitar
+                                    <Trash size={16} />
                                 </button>
                             </div>
                         ))
@@ -92,11 +102,19 @@ const CartDrawer = () => {
 
                 <SheetFooter className="border-t pt-4">
                     <div className="w-full space-y-3">
-                        <p className="text-lg font-semibold">
+                        <Button
+                            variant="outline"
+                            className="w-full flex items-center gap-2"
+                            onClick={closeCart}
+                        >
+                            <ArrowLeft size={16} />
+                            Seguir comprando
+                        </Button>
+                        <p className="text-lg font-semibold text-center">
                             Total: ${total.toLocaleString()}
                         </p>
 
-                        <Button className="w-full" onClick={()=>toast("Bazinga!")}>
+                        <Button className="w-full" onClick={() => toast("Bazinga!")}>
                             Confirmar pedido
                         </Button>
                     </div>

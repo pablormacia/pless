@@ -44,8 +44,9 @@ export function ProductCard({
     }
   };
 
-  const hasImage =
-    product.image && product.image !== "" && product.image !== "/nothing.jpg";
+  const hasImage = product.image_url && product.image_url !== "";
+  const imageUrl = product.image_url ?? null;
+  console.log(imageUrl)
 
   const handleAdd = () => {
     const exists = items.find((i) => i.id === product.id);
@@ -56,19 +57,32 @@ export function ProductCard({
       return;
     }
 
+    const isFirst = items.length === 0;
+
+
+
     add({
       id: product.id,
       name: product.name,
       price: product.price,
       quantity,
+      image: imageUrl,
     });
 
-    toast("Producto agregado al carrito!", {
-  duration: 800,
-});
     haptic();
     animateButton();
-    openCart();
+
+    if (isFirst) {
+      openCart();
+
+    } else {
+      toast("Producto agregado al carrito!", {
+        duration: 1500,
+      });
+    }
+
+
+
   };
 
   const confirmAdd = () => {
@@ -77,15 +91,15 @@ export function ProductCard({
       name: product.name,
       price: product.price,
       quantity: pendingQuantity,
+      image: imageUrl,
     });
 
     toast("Cantidad actualizada!", {
-  duration: 800,
-});
+      duration: 1500,
+    });
     haptic();
     animateButton();
     setShowModal(false);
-    openCart();
   };
 
   // Animación del botón
@@ -107,7 +121,7 @@ export function ProductCard({
         <div className="w-20 h-20 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 shrink-0">
           {hasImage ? (
             <Image
-              src={product.image}
+              src={imageUrl!}
               width={80}
               height={80}
               alt={product.name}
