@@ -1,32 +1,49 @@
-import Link from 'next/link'
+"use client";
 
+import Link from "next/link";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { usePathname } from "next/navigation";
 
-export default function AdminSidebar({ slug }: { slug: string }) {
-    return (
-        <aside className="w-64 p-4 border-r h-screen sticky top-0 bg-white">
-            <div className="mb-6">
-                <h3 className="text-lg font-semibold">Panel — {slug}</h3>
-                <p className="text-sm text-muted-foreground">Administrador</p>
-            </div>
+interface Props {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  slug: string;
+}
 
+export function AdminSidebar({ open, setOpen, slug }: Props) {
+  const pathname = usePathname();
 
-            <nav className="space-y-2">
-                <Link href={`/${slug}/admin`} className="block p-2 rounded hover:bg-slate-50">
-                    Dashboard
-                </Link>
-                <Link href={`/${slug}/admin/pedidos`} className="block p-2 rounded hover:bg-slate-50">
-                    Pedidos
-                </Link>
-                <Link href={`/${slug}/admin/productos`} className="block p-2 rounded hover:bg-slate-50">
-                    Productos
-                </Link>
-                <Link href={`/${slug}/admin/promociones`} className="block p-2 rounded hover:bg-slate-50">
-                    Promociones
-                </Link>
-                <Link href={`/${slug}/admin/config`} className="block p-2 rounded hover:bg-slate-50">
-                    Configuración
-                </Link>
-            </nav>
-        </aside>
-    )
+  const links = [
+    { href: `/${slug}/admin`, label: "Dashboard" },
+    { href: `/${slug}/admin/productos`, label: "Productos" },
+    { href: `/${slug}/admin/categorias`, label: "Categorías" },
+    { href: `/${slug}/admin/ajustes`, label: "Ajustes" },
+  ];
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent side="left" className="p-0 w-64">
+        <nav className="flex flex-col py-4">
+          {links.map((item) => {
+            const active = pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`px-4 py-3 text-lg border-b ${
+                  active ? "bg-gray-100 font-semibold" : ""
+                }`}
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+
+          <button className="px-4 py-3 text-left text-red-600">Cerrar sesión</button>
+        </nav>
+      </SheetContent>
+    </Sheet>
+  );
 }
