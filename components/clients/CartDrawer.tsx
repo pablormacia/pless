@@ -10,7 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, ArrowLeft, Trash } from "lucide-react";
 import { useCartStore } from "@/stores/cart";
-import { toast } from "sonner";
+import { useState } from "react";
+import OrderConfirmModal from "./OrderConfirmModal";
 
 const CartDrawer = () => {
     const items = useCartStore((state) => state.items);
@@ -20,107 +21,124 @@ const CartDrawer = () => {
     const isOpen = useCartStore((state) => state.isOpen);
     const closeCart = useCartStore((state) => state.closeCart);
 
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+
     const total = items.reduce(
         (acc, item) => acc + item.price * item.quantity,
         0
     );
 
     return (
-        <Sheet open={isOpen} onOpenChange={closeCart}>
-            <SheetContent side="right" className="w-[350px] flex flex-col">
-                <SheetHeader>
-                    <SheetTitle>Carrito</SheetTitle>
-                </SheetHeader>
+        <>
+            <Sheet open={isOpen} onOpenChange={closeCart}>
+                <SheetContent side="right" className="w-[350px] flex flex-col">
+                    <SheetHeader>
+                        <SheetTitle>Carrito</SheetTitle>
+                    </SheetHeader>
 
-                <div className="mt-4 flex-1 space-y-4 overflow-y-auto">
-                    {items.length === 0 ? (
-                        <p className="text-center text-sm text-gray-500">
-                            Carrito vacío
-                        </p>
-                    ) : (
-                        items.map((item) => (
-                            <div
-                                key={item.id}
-                                className="border rounded-md px-3 py-2 flex items-center justify-between"
-                            >
-                                {item.image && (
-                                    <div className="w-8 h-8 mr-1 rounded overflow-hidden bg-gray-100 flex-shrink-0">
-                                        <img
-                                            src={item.image}
-                                            alt={item.name}
-                                            className="object-cover w-full h-full"
-                                        />
-                                    </div>
-                                )}
-                                <div className="flex-1 flex flex-col justify-center">
-                                    <p className="font-medium leading-tight">{item.name}</p>
-                                    <p className="text-sm text-gray-500 leading-tight">
-                                        ${item.price.toLocaleString()}
-                                    </p>
-                                </div>
-
-                                {/* Contador */}
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        size="icon"
-                                        variant="outline"
-                                        className="h-8 w-8"
-                                        disabled={item.quantity === 1}
-                                        onClick={() =>
-                                            item.quantity > 1 && updateQuantity(item.id, item.quantity - 1)
-                                        }
-                                    >
-                                        <Minus size={16} />
-                                    </Button>
-
-                                    <span className="w-6 text-center">
-                                        {item.quantity}
-                                    </span>
-
-                                    <Button
-                                        size="icon"
-                                        variant="outline"
-                                        className="h-8 w-8"
-                                        onClick={() =>
-                                            updateQuantity(item.id, item.quantity + 1)
-                                        }
-                                    >
-                                        <Plus size={16} />
-                                    </Button>
-                                </div>
-
-                                <button
-                                    onClick={() => removeItem(item.id)}
-                                    className="text-red-500 ml-2 flex items-center"
+                    <div className="mt-4 flex-1 space-y-4 overflow-y-auto">
+                        {items.length === 0 ? (
+                            <p className="text-center text-sm text-gray-500">
+                                Carrito vacío
+                            </p>
+                        ) : (
+                            items.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="border rounded-md px-3 py-2 flex items-center justify-between"
                                 >
-                                    <Trash size={16} />
-                                </button>
-                            </div>
-                        ))
-                    )}
-                </div>
+                                    {item.image && (
+                                        <div className="w-8 h-8 mr-1 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                className="object-cover w-full h-full"
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 flex flex-col justify-center">
+                                        <p className="font-medium leading-tight">
+                                            {item.name}
+                                        </p>
+                                        <p className="text-sm text-gray-500 leading-tight">
+                                            ${item.price.toLocaleString()}
+                                        </p>
+                                    </div>
 
-                <SheetFooter className="border-t pt-4">
-                    <div className="w-full space-y-3">
-                        <Button
-                            variant="outline"
-                            className="w-full flex items-center gap-2"
-                            onClick={closeCart}
-                        >
-                            <ArrowLeft size={16} />
-                            Seguir comprando
-                        </Button>
-                        <p className="text-lg font-semibold text-center">
-                            Total: ${total.toLocaleString()}
-                        </p>
+                                    {/* Contador */}
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            size="icon"
+                                            variant="outline"
+                                            className="h-8 w-8"
+                                            disabled={item.quantity === 1}
+                                            onClick={() =>
+                                                updateQuantity(item.id, item.quantity - 1)
+                                            }
+                                        >
+                                            <Minus size={16} />
+                                        </Button>
 
-                        <Button className="w-full" onClick={() => toast("Bazinga!")}>
-                            Confirmar pedido
-                        </Button>
+                                        <span className="w-6 text-center">
+                                            {item.quantity}
+                                        </span>
+
+                                        <Button
+                                            size="icon"
+                                            variant="outline"
+                                            className="h-8 w-8"
+                                            onClick={() =>
+                                                updateQuantity(item.id, item.quantity + 1)
+                                            }
+                                        >
+                                            <Plus size={16} />
+                                        </Button>
+                                    </div>
+
+                                    <button
+                                        onClick={() => removeItem(item.id)}
+                                        className="text-red-500 ml-2 flex items-center"
+                                    >
+                                        <Trash size={16} />
+                                    </button>
+                                </div>
+                            ))
+                        )}
                     </div>
-                </SheetFooter>
-            </SheetContent>
-        </Sheet>
+
+                    <SheetFooter className="border-t pt-4">
+                        <div className="w-full space-y-3">
+                            <Button
+                                variant="outline"
+                                className="w-full flex items-center gap-2"
+                                onClick={closeCart}
+                            >
+                                <ArrowLeft size={16} />
+                                Seguir comprando
+                            </Button>
+                            <p className="text-lg font-semibold text-center">
+                                Total: ${total.toLocaleString()}
+                            </p>
+
+                            {/* CONFIRMAR PEDIDO */}
+                            <Button
+                                className="w-full"
+                                disabled={items.length === 0}
+                                onClick={() => setShowConfirmModal(true)}
+                            >
+                                Confirmar pedido
+                            </Button>
+                        </div>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+
+            {/* MODAL DE CONFIRMACIÓN */}
+            <OrderConfirmModal
+                open={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+            />
+        </>
     );
 };
 
