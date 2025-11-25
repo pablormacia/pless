@@ -35,6 +35,94 @@ export default function AdminProductosPage() {
     const [imageCategory, setImageCategory] = useState<Category | null>(null);
     const [productImageModalOpen, setProductImageModalOpen] = useState(false);
     const [imageProduct, setImageProduct] = useState<Product | null>(null);
+    const [editProductModalOpen, setEditProductModalOpen] = useState(false);
+    const [deleteProductModalOpen, setDeleteProductModalOpen] = useState(false);
+
+    const [deleteProductConfirmText, setDeleteProductConfirmText] = useState("");
+
+    // Abrir modal de edición
+    const openEditModal = (product: Product) => {
+        setSelectedProduct(product);
+        setEditProductModalOpen(true);
+    };
+
+    // Guardar cambios de producto
+const saveProductChanges = async (updatedProduct: Partial<Product>) => {
+    if (!selectedProduct) return;
+
+    // 💡 Sacamos image_url para no tocarla
+    const { image_url, id, ...rest } = updatedProduct;
+
+    // Si por alguna razón rest está vacío, no hacemos nada
+    if (Object.keys(rest).length === 0) {
+        setEditProductModalOpen(false);
+        return;
+    }
+
+    const { error } = await supabase
+        .from("products")
+        .update(rest)
+        .eq("id", selectedProduct.id)
+        .eq("business_id", businessId);
+
+    if (error) {
+        toast.error("Error al guardar cambios");
+        console.log(error);
+        return;
+    }
+
+    setCategories((prev) =>
+        prev.map((cat) => ({
+            ...cat,
+            products: cat.products.map((p) =>
+                p.id === selectedProduct.id
+                    ? { ...p, ...rest } // 👈 acá también sin image_url
+                    : p
+            ),
+        }))
+    );
+
+    toast.success("Producto actualizado");
+    setEditProductModalOpen(false);
+};
+
+
+    // Abrir modal de eliminación
+    const openDeleteProduct = (product: Product) => {
+        setSelectedProduct(product);
+        setDeleteProductConfirmText("");
+        setDeleteProductModalOpen(true);
+    };
+
+    // Eliminar producto
+    const deleteProduct = async () => {
+        if (!selectedProduct) return;
+        if (deleteProductConfirmText !== "Confirmar") {
+            toast.error("Debes escribir Confirmar exactamente");
+            return;
+        }
+
+        const { error } = await supabase
+            .from("products")
+            .delete()
+            .eq("id", selectedProduct.id)
+            .eq("business_id", businessId);
+
+        if (error) {
+            toast.error("Error al eliminar producto");
+            return;
+        }
+
+        setCategories((prev) =>
+            prev.map((cat) => ({
+                ...cat,
+                products: cat.products.filter((p) => p.id !== selectedProduct.id),
+            }))
+        );
+
+        toast.success("Producto eliminado");
+        setDeleteProductModalOpen(false);
+    };
 
     const openProductImageModal = (p: Product) => {
         setImageProduct(p);
@@ -392,9 +480,7 @@ export default function AdminProductosPage() {
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                onClick={() =>
-                                                    (window.location.href = `/admin/productos/${product.id}/edit`)
-                                                }
+                                                onClick={() => openEditModal(product)}
                                             >
                                                 <Pencil size={18} />
                                             </Button>
@@ -405,6 +491,13 @@ export default function AdminProductosPage() {
                                                 onClick={() => openPriceModal(product)}
                                             >
                                                 <DollarSign size={18} />
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                size="icon"
+                                                onClick={() => openDeleteProduct(product)}
+                                            >
+                                                🗑️
                                             </Button>
                                         </div>
                                     </div>
@@ -564,7 +657,86 @@ export default function AdminProductosPage() {
                 </div>
             )}
 
-
+            {editProductModalOpen && selectedProduct && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-xl w-96 space-y-4 shadow">
+                        <h3 className="text-lg font-semibold">Editar producto</h3>
+                        <input
+                            type="text"
+                            value={selectedProduct.name}
+                            onChange={(e) =>
+                                setSelectedProduct((p) => p && { ...p, name: e.target.value })
+                            }
+                            className="w-full border p-2 rounded"
+                            placeholder="Nombre"
+                        />
+                        <textarea
+                            value={selectedProduct.description ?? ""}
+                            onChange={(e) =>
+                                setSelectedProduct((p) => p && { ...p, description: e.target.value })
+                            }
+                            className="w-full border p-2 rounded"
+                            placeholder="Descripción"
+                        />
+                        <input
+                            type="number"
+                            value={selectedProduct.price}
+                            onChange={(e) =>
+                                setSelectedProduct((p) => p && { ...p, price: Number(e.target.value) })
+                            }
+                            className="w-full border p-2 rounded"
+                            placeholder="Precio"
+                        />
+                        <div className="flex items-center gap-2">
+                            <span>Disponible:</span>
+                            <Switch
+                                checked={selectedProduct.available}
+                                onCheckedChange={(v) =>
+                                    setSelectedProduct((p) => p && { ...p, available: !!v })
+                                }
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setEditProductModalOpen(false)}>
+                                Cancelar
+                            </Button>
+                            <Button onClick={() => saveProductChanges(selectedProduct)}>Guardar</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {deleteProductModalOpen && selectedProduct && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-xl w-96 shadow space-y-4">
+                        <h3 className="text-lg font-semibold text-red-600">Eliminar producto</h3>
+                        <p>
+                            Vas a eliminar el producto <b>{selectedProduct.name}</b>. Para continuar
+                            escribí <b>“Confirmar”</b>.
+                        </p>
+                        <input
+                            className="w-full border p-2 rounded"
+                            value={deleteProductConfirmText}
+                            onChange={(e) => setDeleteProductConfirmText(e.target.value)}
+                            placeholder="Escribí Confirmar"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setDeleteProductModalOpen(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                disabled={deleteProductConfirmText !== "Confirmar"}
+                                onClick={deleteProduct}
+                            >
+                                Eliminar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
