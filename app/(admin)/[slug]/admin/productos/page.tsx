@@ -428,59 +428,52 @@ export default function AdminProductosPage() {
                             onUploaded={async (newUrl) => {
                                 try {
                                     if (newUrl) {
-                                        // SUBIR FOTO
                                         const filename = newUrl.split("/").pop();
+                                        console.log(filename, imageCategory.id)
+                                        // Encontrar categoría correcta
+                                        const catId = imageCategory.id;
 
                                         const { error } = await supabase
                                             .from("categories")
                                             .update({ image_url: filename })
-                                            .eq("id", imageCategory.id)
+                                            .eq("id", catId)
                                             .eq("business_id", businessId);
 
-                                        if (error) throw error;
+                                        if (error) console.log(error);
 
+                                        // Actualizo estado React con la URL completa
                                         setCategories(prev =>
                                             prev.map(c =>
-                                                c.id === imageCategory.id
-                                                    ? { ...c, image_url: newUrl }
-                                                    : c
+                                                c.id === catId ? { ...c, image_url: newUrl } : c
                                             )
                                         );
                                     } else {
-                                        // 🟡 ELIMINAR FOTO — BORRAR DEL STORAGE!
-                                        if (imageCategory.image_url) {
-                                            const filename = imageCategory.image_url.split("/").pop();
-
-                                            await supabase.storage
-                                                .from("categories")
-                                                .remove([`${businessId}/${imageCategory.id}/${filename}`]);
-                                        }
+                                        const catId = imageCategory.id;
 
                                         const { error } = await supabase
                                             .from("categories")
                                             .update({ image_url: null })
-                                            .eq("id", imageCategory.id)
+                                            .eq("id", catId)
                                             .eq("business_id", businessId);
 
                                         if (error) throw error;
 
                                         setCategories(prev =>
                                             prev.map(c =>
-                                                c.id === imageCategory.id
-                                                    ? { ...c, image_url: null }
-                                                    : c
+                                                c.id === catId ? { ...c, image_url: null } : c
                                             )
                                         );
                                     }
 
                                     setImageModalOpen(false);
                                 } catch (err) {
-                                    console.error(err);
+                                    console.error("Error al actualizar la categoría:", err);
                                     toast.error("Error al actualizar la categoría");
                                 }
                             }}
 
                         />
+
 
 
                         <div className="flex justify-end">

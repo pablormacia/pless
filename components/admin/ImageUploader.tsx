@@ -26,17 +26,17 @@ export default function ImageUploader({
     const getInternalPath = (url?: string | null) => {
         if (!url) return null;
 
-        // Intentar obtener la parte después de .../object/public/businesses/
         const marker = "/object/public/businesses/";
         const idx = url.indexOf(marker);
         if (idx !== -1) {
             return url.substring(idx + marker.length);
         }
 
-        // Si la URL es ya una ruta interna por algún motivo, devolvela
-        // (ej: "123/products/8/imagen.webp")
-        if (!url.startsWith("http") && url.includes("/")) return url;
-
+        // Si solo es un filename, construir ruta según bucket
+        if (!url.startsWith("http") && url.includes(".")) {
+            if (bucket === "categories") return `${businessId}/categories/${folderId}/${url}`;
+            if (bucket === "products") return `${businessId}/products/${folderId}/${url}`;
+        }
 
         return null;
     };

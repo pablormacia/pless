@@ -24,7 +24,7 @@ export function CategorySection({
         <div className="flex items-center gap-3">
           <div className="relative w-12 h-12 rounded-lg overflow-hidden">
             <Image
-              src={category.image_url}
+              src={category.image_url ? category.image_url : "/icons/food.svg"}
               alt={category.name}
               fill
               className="object-cover"
