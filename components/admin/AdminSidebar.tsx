@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
+import { DialogTitle } from "@radix-ui/react-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+
 
 interface Props {
   open: boolean;
@@ -22,6 +25,7 @@ export function AdminSidebar({ open, setOpen, slug }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
+      <VisuallyHidden><DialogTitle>Dashboard Pless</DialogTitle></VisuallyHidden>
       <SheetContent side="left" className="p-0 w-64">
         <nav className="flex flex-col py-4">
           {links.map((item) => {

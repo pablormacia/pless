@@ -5,10 +5,18 @@ import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Pencil, DollarSign, ChevronDown, ChevronRight } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
+import { Pencil, DollarSign, ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
 import { ChangePriceModal } from "@/components/admin/ChangePriceModal";
 import { toast } from "sonner";
 import { Product, Category } from "@/types";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 export default function AdminProductosPage() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -18,10 +26,36 @@ export default function AdminProductosPage() {
 
     const [priceModalOpen, setPriceModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+    const [newCategoryName, setNewCategoryName] = useState("");
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [imageCategory, setImageCategory] = useState<Category | null>(null);
+    const [productImageModalOpen, setProductImageModalOpen] = useState(false);
+    const [imageProduct, setImageProduct] = useState<Product | null>(null);
+
+    const openProductImageModal = (p: Product) => {
+        setImageProduct(p);
+        setProductImageModalOpen(true);
+    };
+
+    const openImageModal = (cat: Category) => {
+        setImageCategory(cat);
+        setImageModalOpen(true);
+    };
+
     const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
     const toggleCategory = (id: number) => {
         setOpenCategory((prev) => (prev === id ? null : id));
+    };
+
+    const openEditCategory = (cat: Category) => {
+        setSelectedCategory(cat);
+        setNewCategoryName(cat.name);
+        setEditModalOpen(true);
     };
 
     useEffect(() => {
@@ -58,12 +92,12 @@ export default function AdminProductosPage() {
                 ...cat,
                 image_url: cat.image_url
                     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/businesses/${businessId}/categories/${cat.id}/${cat.image_url}`
-                    : "/placeholder.png",
+                    : "/icons/food.svg",
                 products: cat.products.map((p) => ({
                     ...p,
                     image_url: p.image_url
                         ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/businesses/${businessId}/products/${p.id}/${p.image_url}`
-                        : "/placeholder.png",
+                        : "/icons/food.svg",
                 })),
             }));
 
@@ -75,13 +109,16 @@ export default function AdminProductosPage() {
     }, []);
 
     const toggleAvailable = async (product: Product, value: boolean) => {
+        console.log(value)
         const { error } = await supabase
             .from("products")
-            .update({ available: value })
-            .eq("id", product.id);
+            .update({ available: !!value })
+            .eq("id", product.id)
+            .eq("business_id", businessId);
 
         if (error) {
             toast.error("Error al actualizar");
+            console.log(error);
             return;
         }
 
@@ -108,10 +145,12 @@ export default function AdminProductosPage() {
         const { error } = await supabase
             .from("products")
             .update({ price: newPrice })
-            .eq("id", selectedProduct.id);
+            .eq("id", selectedProduct.id)
+            .eq("business_id", businessId);
 
         if (error) {
             toast.error("Error al guardar el precio");
+            console.log(error);
             return;
         }
 
@@ -128,6 +167,60 @@ export default function AdminProductosPage() {
         setPriceModalOpen(false);
     };
 
+    const saveCategoryName = async () => {
+        if (!selectedCategory) return;
+
+        const { error } = await supabase
+            .from("categories")
+            .update({ name: newCategoryName })
+            .eq("id", selectedCategory.id)
+            .eq("business_id", businessId);
+
+        if (error) {
+            toast.error("Error al actualizar categoría");
+            return;
+        }
+
+        setCategories(prev =>
+            prev.map(c => c.id === selectedCategory.id ? { ...c, name: newCategoryName } : c)
+        );
+
+        toast.success("Nombre actualizado");
+        setEditModalOpen(false);
+    };
+
+    const openDeleteCategory = (cat: Category) => {
+        setSelectedCategory(cat);
+        setDeleteConfirmText("");
+        setDeleteModalOpen(true);
+    };
+
+    const deleteCategory = async () => {
+        if (!selectedCategory) return;
+        if (deleteConfirmText !== "Confirmar") {
+            toast.error("Debes escribir Confirmar exactamente");
+            return;
+        }
+
+        const { error } = await supabase
+            .from("categories")
+            .delete()
+            .eq("id", selectedCategory.id)
+            .eq("business_id", businessId);
+
+        if (error) {
+            toast.error("Error al eliminar categoría");
+            return;
+        }
+
+        setCategories(prev => prev.filter(c => c.id !== selectedCategory.id));
+        toast.success("Categoría eliminada");
+        setDeleteModalOpen(false);
+    };
+
+
+
+
     if (loading) return <p>Cargando productos...</p>;
 
     return (
@@ -143,19 +236,81 @@ export default function AdminProductosPage() {
                 />
             )}
 
+            {editModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-xl w-80 space-y-4 shadow">
+                        <h3 className="text-lg font-semibold">Editar categoría</h3>
+
+                        <input
+                            type="text"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            className="w-full border p-2 rounded"
+                        />
+
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+                                Cancelar
+                            </Button>
+                            <Button onClick={saveCategoryName}>
+                                Guardar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {deleteModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-xl w-96 shadow space-y-4">
+                        <h3 className="text-lg font-semibold text-red-600">
+                            Eliminar categoría
+                        </h3>
+
+                        <p>
+                            Vas a eliminar una categoría y <b>todos sus productos asociados</b>.
+                            Para continuar escribí <b>“Confirmar”</b>.
+                        </p>
+
+                        <input
+                            className="w-full border p-2 rounded"
+                            value={deleteConfirmText}
+                            onChange={(e) => setDeleteConfirmText(e.target.value)}
+                            placeholder="Escribí Confirmar"
+                        />
+
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                disabled={deleteConfirmText !== "Confirmar"}
+                                onClick={deleteCategory}
+                            >
+                                Eliminar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+
             <div className="space-y-6">
                 {categories.map((cat) => (
                     <div key={cat.id} className="border rounded-lg bg-white shadow-sm">
-                        {/* Encabezado clickeable */}
-                        <button
-                            onClick={() => toggleCategory(cat.id)}
-                            className="w-full flex items-center justify-between p-3 gap-3"
-                        >
-                            <div className="flex items-center gap-3">
 
-                                {/* Imagen categoría cuadrada */}
+                        {/* --- HEADER COMPLETO --- */}
+                        <div className="w-full flex items-center justify-between p-3 gap-3">
+
+                            {/* Bloque clickeable */}
+                            <button
+                                onClick={() => toggleCategory(cat.id)}
+                                className="flex items-center gap-3 flex-1 text-left"
+                            >
                                 <Image
-                                    src={cat.image_url ?? "/placeholder.png"}
+                                    src={cat.image_url ?? "/icons/food.svg"}
                                     width={40}
                                     height={40}
                                     className="rounded-lg object-cover border aspect-square"
@@ -163,16 +318,44 @@ export default function AdminProductosPage() {
                                 />
 
                                 <h3 className="text-lg font-semibold">{cat.name}</h3>
-                            </div>
 
-                            {openCategory === cat.id ? (
-                                <ChevronDown className="h-5 w-5" />
-                            ) : (
-                                <ChevronRight className="h-5 w-5" />
-                            )}
-                        </button>
+                                <div className="ml-auto">
+                                    {openCategory === cat.id ? (
+                                        <ChevronDown className="h-5 w-5" />
+                                    ) : (
+                                        <ChevronRight className="h-5 w-5" />
+                                    )}
+                                </div>
+                            </button>
 
-                        {/* Contenido expandible */}
+                            {/* Acciones (FUERA del button) */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="p-2 rounded-md hover:bg-gray-100">
+                                        <MoreVertical className="h-5 w-5" />
+                                    </button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => openEditCategory(cat)}>
+                                        Editar nombre
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem onClick={() => openImageModal(cat)}>
+                                        Cambiar foto
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem
+                                        className="text-red-600"
+                                        onClick={() => openDeleteCategory(cat)}
+                                    >
+                                        Eliminar categoría
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+
+                        {/* --- Contenido expandible --- */}
                         {openCategory === cat.id && (
                             <div className="p-3 space-y-3 border-t">
                                 {cat.products.map((product) => (
@@ -180,12 +363,13 @@ export default function AdminProductosPage() {
                                         key={product.id}
                                         className="p-3 bg-gray-50 rounded-lg shadow-sm flex gap-3 items-center"
                                     >
-                                        {/* Imagen producto cuadrada */}
+                                        {/* Imagen producto */}
                                         <Image
-                                            src={product.image_url ?? "/placeholder.png"}
+                                            onClick={() => openProductImageModal(product)}
+                                            src={product.image_url ?? "/icons/food.svg"}
                                             width={60}
                                             height={60}
-                                            className="rounded-lg object-cover border aspect-square"
+                                            className="rounded-lg object-cover border aspect-square cursor-pointer"
                                             alt={product.name}
                                         />
 
@@ -197,7 +381,9 @@ export default function AdminProductosPage() {
                                                 <span className="text-xs">Disponible:</span>
                                                 <Switch
                                                     checked={product.available}
-                                                    onCheckedChange={(v) => toggleAvailable(product, v)}
+                                                    onCheckedChange={(v) =>
+                                                        toggleAvailable(product, !!v)
+                                                    }
                                                 />
                                             </div>
                                         </div>
@@ -228,6 +414,164 @@ export default function AdminProductosPage() {
                     </div>
                 ))}
             </div>
+
+            {imageModalOpen && imageCategory && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-xl w-80 space-y-4 shadow">
+                        <h3 className="text-lg font-semibold">Cambiar foto de categoría</h3>
+
+                        <ImageUploader
+                            currentUrl={imageCategory.image_url}
+                            bucket="categories"
+                            folderId={imageCategory.id}
+                            businessId={businessId}
+                            onUploaded={async (newUrl) => {
+                                try {
+                                    if (newUrl) {
+                                        // SUBIR FOTO
+                                        const filename = newUrl.split("/").pop();
+
+                                        const { error } = await supabase
+                                            .from("categories")
+                                            .update({ image_url: filename })
+                                            .eq("id", imageCategory.id)
+                                            .eq("business_id", businessId);
+
+                                        if (error) throw error;
+
+                                        setCategories(prev =>
+                                            prev.map(c =>
+                                                c.id === imageCategory.id
+                                                    ? { ...c, image_url: newUrl }
+                                                    : c
+                                            )
+                                        );
+                                    } else {
+                                        // 🟡 ELIMINAR FOTO — BORRAR DEL STORAGE!
+                                        if (imageCategory.image_url) {
+                                            const filename = imageCategory.image_url.split("/").pop();
+
+                                            await supabase.storage
+                                                .from("categories")
+                                                .remove([`${businessId}/${imageCategory.id}/${filename}`]);
+                                        }
+
+                                        const { error } = await supabase
+                                            .from("categories")
+                                            .update({ image_url: null })
+                                            .eq("id", imageCategory.id)
+                                            .eq("business_id", businessId);
+
+                                        if (error) throw error;
+
+                                        setCategories(prev =>
+                                            prev.map(c =>
+                                                c.id === imageCategory.id
+                                                    ? { ...c, image_url: null }
+                                                    : c
+                                            )
+                                        );
+                                    }
+
+                                    setImageModalOpen(false);
+                                } catch (err) {
+                                    console.error(err);
+                                    toast.error("Error al actualizar la categoría");
+                                }
+                            }}
+
+                        />
+
+
+                        <div className="flex justify-end">
+                            <Button variant="outline" onClick={() => setImageModalOpen(false)}>
+                                Cerrar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {productImageModalOpen && imageProduct && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-xl w-80 space-y-4 shadow">
+                        <h3 className="text-lg font-semibold">Cambiar foto del producto</h3>
+
+                        <ImageUploader
+                            currentUrl={imageProduct.image_url}
+                            bucket="products"
+                            folderId={imageProduct.id}
+                            businessId={businessId}
+                            onUploaded={async (newUrl) => {
+                                try {
+                                    if (newUrl) {
+                                        // Asegurar que la URL cambie siempre (evita cache de Next.js)
+                                        const versionedUrl = `${newUrl}?v=${Date.now()}`;
+
+                                        const filename = newUrl.split("/").pop();
+                                        const { error } = await supabase
+                                            .from("products")
+                                            .update({ image_url: filename })
+                                            .eq("id", imageProduct.id)
+                                            .eq("business_id", businessId);
+
+                                        if (error) throw error;
+
+                                        // Actualizar estado con la versión nueva
+                                        setCategories(prev =>
+                                            prev.map(cat => ({
+                                                ...cat,
+                                                products: cat.products.map(p =>
+                                                    p.id === imageProduct.id
+                                                        ? { ...p, image_url: versionedUrl }
+                                                        : p
+                                                )
+                                            }))
+                                        );
+
+                                    } else {
+                                        // ELIMINAR → guardar null en DB
+                                        const { error } = await supabase
+                                            .from("products")
+                                            .update({ image_url: null })
+                                            .eq("id", imageProduct.id)
+                                            .eq("business_id", businessId);
+
+                                        if (error) throw error;
+
+                                        // En el estado también lo dejamos null (NO un placeholder)
+                                        setCategories(prev =>
+                                            prev.map(cat => ({
+                                                ...cat,
+                                                products: cat.products.map(p =>
+                                                    p.id === imageProduct.id
+                                                        ? { ...p, image_url: null }
+                                                        : p
+                                                )
+                                            }))
+                                        );
+                                    }
+
+                                    setProductImageModalOpen(false);
+
+                                } catch (err) {
+                                    console.error(err);
+                                    toast.error("Error al actualizar el producto");
+                                }
+                            }}
+
+                        />
+
+
+                        <div className="flex justify-end">
+                            <Button variant="outline" onClick={() => setProductImageModalOpen(false)}>
+                                Cerrar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
         </div>
     );
 }
