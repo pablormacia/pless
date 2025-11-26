@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,12 @@ export default function ImageUploader({
     onUploaded
 }: Props) {
     const [uploading, setUploading] = useState(false);
+    const [imageLoading, setImageLoading] = useState(true);
+
+    // Cada vez que cambia la URL, volvemos a mostrar el loader
+    useEffect(() => {
+        setImageLoading(true);
+    }, [currentUrl]);
 
     const getInternalPath = (url?: string | null) => {
         if (!url) return null;
@@ -72,19 +78,13 @@ export default function ImageUploader({
         const fileName = `${Date.now()}.webp`;
         let filePath = "";
 
-        // CATEGORÍAS — carpeta sin businessId
         if (bucket === "categories") {
             filePath = `${businessId}/categories/${folderId}/${fileName}`;
-        }
-        // PRODUCTOS — carpeta con businessId (como ya funciona)
-        else if (bucket === "products") {
+        } else if (bucket === "products") {
             filePath = `${businessId}/products/${folderId}/${fileName}`;
-        }
-        // Cualquier otro bucket opcional
-        else {
+        } else {
             filePath = `${businessId}/${bucket}/${folderId}/${fileName}`;
         }
-
 
         const { error } = await supabase.storage
             .from("businesses")
@@ -103,7 +103,6 @@ export default function ImageUploader({
         const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/businesses/${filePath}`;
 
         onUploaded(publicUrl);
-
         toast.success("Imagen actualizada");
         setUploading(false);
     };
@@ -113,12 +112,11 @@ export default function ImageUploader({
         await handleDelete();
     };
 
-    // ELIMINAR la imagen desde el botón en el modal
     const handleDelete = async () => {
         if (!currentUrl) return;
 
         const path = getInternalPath(currentUrl);
-        console.log(path)
+        console.log(path);
         if (!path) return;
 
         setUploading(true);
@@ -145,24 +143,47 @@ export default function ImageUploader({
         return true;
     };
 
+    const hasImage = isValidImageUrl(currentUrl);
+    const imageSrc = hasImage ? (currentUrl as string) : "/icons/food.svg";
+
     return (
         <div className="flex flex-col items-center gap-2">
-            <Image
-                src={currentUrl || "/icons/food.svg"}
-                alt="Preview"
-                width={120}
-                height={120}
-                className="rounded-xl object-cover aspect-square border"
-            />
+            {/* Contenedor cuadrado con fondo + loader */}
+            <div className="relative w-[120px] h-[120px] rounded-xl border bg-slate-100 overflow-hidden flex items-center justify-center">
+                {/* Skeleton + spinner mientras carga la imagen real */}
+                {hasImage && (imageLoading || uploading) && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                        <div className="h-6 w-6 rounded-full border-2 border-slate-400 border-t-transparent animate-spin" />
+                        <span className="text-xs text-slate-500">Cargando imagen...</span>
+                    </div>
+                )}
+
+                {/* Imagen (con fade-in cuando carga) */}
+                <Image
+                    src={imageSrc}
+                    alt="Preview"
+                    fill
+                    sizes="120px"
+                    className={`object-cover transition-opacity duration-300 ${
+                        imageLoading ? "opacity-0" : "opacity-100"
+                    }`}
+                    onLoadingComplete={() => setImageLoading(false)}
+                />
+            </div>
 
             <Button variant="outline" size="sm" asChild disabled={uploading}>
                 <label>
                     {uploading ? "Subiendo..." : "Cambiar imagen"}
-                    <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleUpload}
+                    />
                 </label>
             </Button>
 
-            {isValidImageUrl(currentUrl) && (
+            {hasImage && (
                 <Button
                     variant="destructive"
                     size="sm"

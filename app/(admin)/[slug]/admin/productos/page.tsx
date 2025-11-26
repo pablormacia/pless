@@ -12,11 +12,12 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import { Pencil, DollarSign, ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
+import { Pencil, DollarSign, ChevronDown, ChevronRight, MoreVertical, Trash } from "lucide-react";
 import { ChangePriceModal } from "@/components/admin/ChangePriceModal";
 import { toast } from "sonner";
 import { Product, Category } from "@/types";
 import ImageUploader from "@/components/admin/ImageUploader";
+import { CategoryCard } from "@/components/admin/CategoryCard";
 
 export default function AdminProductosPage() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -37,8 +38,48 @@ export default function AdminProductosPage() {
     const [imageProduct, setImageProduct] = useState<Product | null>(null);
     const [editProductModalOpen, setEditProductModalOpen] = useState(false);
     const [deleteProductModalOpen, setDeleteProductModalOpen] = useState(false);
+    const [addCategoryModalOpen, setAddCategoryModalOpen] = useState(false);
+    const [newCatName, setNewCatName] = useState("");
 
     const [deleteProductConfirmText, setDeleteProductConfirmText] = useState("");
+
+    const createCategory = async () => {
+        if (!newCatName.trim()) {
+            toast.error("La categoría necesita un nombre");
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from("categories")
+            .insert({
+                business_id: businessId,
+                name: newCatName,
+                sort_order: categories.length + 1,
+                image_url: null
+            })
+            .select()
+            .single();
+
+        if (error) {
+            toast.error("Error al crear categoría");
+            return;
+        }
+
+        // La agregamos al estado
+        setCategories(prev => [
+            ...prev,
+            {
+                ...data,
+                image_url: "/icons/food.svg",
+                products: [],
+            }
+        ]);
+
+        setAddCategoryModalOpen(false);
+        setNewCatName("");
+
+        toast.success("Categoría creada");
+    };
 
     // Abrir modal de edición
     const openEditModal = (product: Product) => {
@@ -47,44 +88,44 @@ export default function AdminProductosPage() {
     };
 
     // Guardar cambios de producto
-const saveProductChanges = async (updatedProduct: Partial<Product>) => {
-    if (!selectedProduct) return;
+    const saveProductChanges = async (updatedProduct: Partial<Product>) => {
+        if (!selectedProduct) return;
 
-    // 💡 Sacamos image_url para no tocarla
-    const { image_url, id, ...rest } = updatedProduct;
+        // 💡 Sacamos image_url para no tocarla
+        const { image_url, id, ...rest } = updatedProduct;
 
-    // Si por alguna razón rest está vacío, no hacemos nada
-    if (Object.keys(rest).length === 0) {
+        // Si por alguna razón rest está vacío, no hacemos nada
+        if (Object.keys(rest).length === 0) {
+            setEditProductModalOpen(false);
+            return;
+        }
+
+        const { error } = await supabase
+            .from("products")
+            .update(rest)
+            .eq("id", selectedProduct.id)
+            .eq("business_id", businessId);
+
+        if (error) {
+            toast.error("Error al guardar cambios");
+            console.log(error);
+            return;
+        }
+
+        setCategories((prev) =>
+            prev.map((cat) => ({
+                ...cat,
+                products: cat.products.map((p) =>
+                    p.id === selectedProduct.id
+                        ? { ...p, ...rest } // 👈 acá también sin image_url
+                        : p
+                ),
+            }))
+        );
+
+        toast.success("Producto actualizado");
         setEditProductModalOpen(false);
-        return;
-    }
-
-    const { error } = await supabase
-        .from("products")
-        .update(rest)
-        .eq("id", selectedProduct.id)
-        .eq("business_id", businessId);
-
-    if (error) {
-        toast.error("Error al guardar cambios");
-        console.log(error);
-        return;
-    }
-
-    setCategories((prev) =>
-        prev.map((cat) => ({
-            ...cat,
-            products: cat.products.map((p) =>
-                p.id === selectedProduct.id
-                    ? { ...p, ...rest } // 👈 acá también sin image_url
-                    : p
-            ),
-        }))
-    );
-
-    toast.success("Producto actualizado");
-    setEditProductModalOpen(false);
-};
+    };
 
 
     // Abrir modal de eliminación
@@ -386,125 +427,26 @@ const saveProductChanges = async (updatedProduct: Partial<Product>) => {
 
 
             <div className="space-y-6">
+                <div className="flex justify-end mb-4">
+                    <Button onClick={() => setAddCategoryModalOpen(true)}>
+                        + Agregar categoría
+                    </Button>
+                </div>
                 {categories.map((cat) => (
-                    <div key={cat.id} className="border rounded-lg bg-white shadow-sm">
-
-                        {/* --- HEADER COMPLETO --- */}
-                        <div className="w-full flex items-center justify-between p-3 gap-3">
-
-                            {/* Bloque clickeable */}
-                            <button
-                                onClick={() => toggleCategory(cat.id)}
-                                className="flex items-center gap-3 flex-1 text-left"
-                            >
-                                <Image
-                                    src={cat.image_url ?? "/icons/food.svg"}
-                                    width={40}
-                                    height={40}
-                                    className="rounded-lg object-cover border aspect-square"
-                                    alt={cat.name}
-                                />
-
-                                <h3 className="text-lg font-semibold">{cat.name}</h3>
-
-                                <div className="ml-auto">
-                                    {openCategory === cat.id ? (
-                                        <ChevronDown className="h-5 w-5" />
-                                    ) : (
-                                        <ChevronRight className="h-5 w-5" />
-                                    )}
-                                </div>
-                            </button>
-
-                            {/* Acciones (FUERA del button) */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="p-2 rounded-md hover:bg-gray-100">
-                                        <MoreVertical className="h-5 w-5" />
-                                    </button>
-                                </DropdownMenuTrigger>
-
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => openEditCategory(cat)}>
-                                        Editar nombre
-                                    </DropdownMenuItem>
-
-                                    <DropdownMenuItem onClick={() => openImageModal(cat)}>
-                                        Cambiar foto
-                                    </DropdownMenuItem>
-
-                                    <DropdownMenuItem
-                                        className="text-red-600"
-                                        onClick={() => openDeleteCategory(cat)}
-                                    >
-                                        Eliminar categoría
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-
-                        {/* --- Contenido expandible --- */}
-                        {openCategory === cat.id && (
-                            <div className="p-3 space-y-3 border-t">
-                                {cat.products.map((product) => (
-                                    <div
-                                        key={product.id}
-                                        className="p-3 bg-gray-50 rounded-lg shadow-sm flex gap-3 items-center"
-                                    >
-                                        {/* Imagen producto */}
-                                        <Image
-                                            onClick={() => openProductImageModal(product)}
-                                            src={product.image_url ?? "/icons/food.svg"}
-                                            width={60}
-                                            height={60}
-                                            className="rounded-lg object-cover border aspect-square cursor-pointer"
-                                            alt={product.name}
-                                        />
-
-                                        <div className="flex-1">
-                                            <p className="font-semibold">{product.name}</p>
-                                            <p className="text-sm text-gray-600">${product.price}</p>
-
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-xs">Disponible:</span>
-                                                <Switch
-                                                    checked={product.available}
-                                                    onCheckedChange={(v) =>
-                                                        toggleAvailable(product, !!v)
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => openEditModal(product)}
-                                            >
-                                                <Pencil size={18} />
-                                            </Button>
-
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => openPriceModal(product)}
-                                            >
-                                                <DollarSign size={18} />
-                                            </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                onClick={() => openDeleteProduct(product)}
-                                            >
-                                                🗑️
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    <CategoryCard
+                        key={cat.id}
+                        category={cat}
+                        isOpen={openCategory === cat.id}
+                        onToggle={() => toggleCategory(cat.id)}
+                        onEditCategory={() => openEditCategory(cat)}
+                        onChangeCategoryImage={() => openImageModal(cat)}
+                        onDeleteCategory={() => openDeleteCategory(cat)}
+                        onEditProduct={openEditModal}
+                        onChangeProductImage={openProductImageModal}
+                        onToggleAvailable={toggleAvailable}
+                        onChangePrice={openPriceModal}
+                        onDeleteProduct={openDeleteProduct}
+                    />
                 ))}
             </div>
 
@@ -737,6 +679,29 @@ const saveProductChanges = async (updatedProduct: Partial<Product>) => {
                     </div>
                 </div>
             )}
+            {addCategoryModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-xl w-96 space-y-4 shadow">
+                        <h3 className="text-lg font-semibold">Nueva categoría</h3>
+
+                        <input
+                            className="w-full border p-2 rounded"
+                            placeholder="Nombre"
+                            value={newCatName}
+                            onChange={(e) => setNewCatName(e.target.value)}
+                        />
+
+
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" onClick={() => setAddCategoryModalOpen(false)}>
+                                Cancelar
+                            </Button>
+                            <Button onClick={createCategory}>Crear</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
