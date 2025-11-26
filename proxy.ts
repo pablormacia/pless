@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-
-// Proxy SIEMPRE corre en Node.js (no edge)
-// No se permite runtime ni config
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export async function proxy(request: NextRequest) {
-  const response = NextResponse.next();
+  const { pathname } = request.nextUrl;
 
-  // Crear cliente Supabase SSR para Node.js runtime
+  // 🚫 IMPORTANTE:
+  // NO interceptar llamadas internas de Supabase Auth
+  if (
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.includes("/auth/v1")
+  ) {
+    return NextResponse.next();
+  }
+
+  let response = NextResponse.next();
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -16,28 +24,21 @@ export async function proxy(request: NextRequest) {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
-        set(name: string, value: string, options) {
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
+        set(name: string, value: string, options: CookieOptions) {
+          response.cookies.set({ name, value, ...options });
         },
-        remove(name: string, options) {
-          response.cookies.delete({
-            name,
-            ...options,
-          });
+        remove(name: string, options: CookieOptions) {
+          response.cookies.set({ name, value: "", ...options });
         },
       },
     }
   );
 
   const { data } = await supabase.auth.getUser();
-  const pathname = request.nextUrl.pathname;
+  const segments = pathname.split("/").filter(Boolean);
+  const isAdminRoute = segments.includes("admin");
 
-  // Protección manual de rutas
-  if (pathname.startsWith("/admin") && !data.user) {
+  if (isAdminRoute && !data.user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
