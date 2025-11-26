@@ -1,6 +1,6 @@
 // /services/categories.ts
 import { supabase } from "@/lib/supabaseClient";
-import { Category } from "@/types";
+import { Category, Product } from "@/types";
 
 const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
@@ -75,31 +75,43 @@ export async function deleteCategory(id: string) {
   if (error) throw error;
 }
 
-export async function deleteCategoryStorage(businessId: string, category: Category) {
-  const storage = supabase.storage.from("businesses");
+export const deleteCategoryImage = async (categoryId: string) => {
+  const basePath = `${businessId}/categories/${categoryId}`;
 
-  const categoryFolder = `${businessId}/categories/${category.id}`;
+  const { data: files, error } = await supabase.storage
+    .from("businesses")
+    .list(basePath);
 
-  // 1. Borrar carpeta de categoría
-  const { error: categoryErr } = await storage.remove([categoryFolder]);
-
-  if (categoryErr) {
-    console.error("Error removing CATEGORY folder:", categoryErr);
+  if (error) {
+    console.error("Error listing category files:", error);
+    return;
   }
 
-  // 2. Borrar carpetas de productos
-  if (category.products) {
-    const productFolders = category.products.map(
-      (p) => `${businessId}/products/${p.id}`
-    );
+  if (files && files.length > 0) {
+    const paths = files.map((file) => `${basePath}/${file.name}`);
 
-    if (productFolders.length > 0) {
-      const { error: prodErr } = await storage.remove(productFolders);
+    const { error: deleteErr } = await supabase.storage
+      .from("businesses")
+      .remove(paths);
 
-      if (prodErr) {
-        console.error("Error removing PRODUCT folders:", prodErr);
-      }
+    if (deleteErr) {
+      console.error("Error removing category files:", deleteErr);
     }
   }
-}
+};
+
+export const deleteProductsOfCategory = async (products: Product[]) => {
+  for (const p of products) {
+    const basePath = `${businessId}/products/${p.id}`;
+
+    const { data: files } = await supabase.storage
+      .from("businesses")
+      .list(basePath);
+
+    if (files && files.length > 0) {
+      const paths = files.map((file) => `${basePath}/${file.name}`);
+      await supabase.storage.from("businesses").remove(paths);
+    }
+  }
+};
 

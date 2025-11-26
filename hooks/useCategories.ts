@@ -6,6 +6,8 @@ import {
   deleteCategory,
   updateCategoryImage,
   updateCategoryName,
+  deleteCategoryImage,
+  deleteProductsOfCategory
 } from "@/services/categories";
 import { Category } from "@/types";
 import { getImageUrl } from "@/utils/getImageUrl";
@@ -49,5 +51,7 @@ export function useCategories() {
     deleteCategory,
     updateCategoryName,
     updateCategoryImage,
+    deleteCategoryImage,
+    deleteProductsOfCategory
   };
 }

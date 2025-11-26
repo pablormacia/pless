@@ -24,7 +24,7 @@ import { Product, Category } from "@/types";
 import { getImageUrl } from "@/utils/getImageUrl";
 
 import { createProduct } from "@/services/products";
-import { deleteCategoryStorage } from "@/services/categories";
+import { deleteCategoryImage,deleteProductsOfCategory } from "@/services/categories";
 
 const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
@@ -126,7 +126,8 @@ export default function AdminProductosPage() {
 
         try {
             await deleteCategoryService(selectedCategory.id);
-            await deleteCategoryStorage(businessId, selectedCategory);
+            await deleteCategoryImage(selectedCategory.id);
+            await deleteProductsOfCategory(selectedCategory.products);
             setCategories((prev) => prev.filter((c) => c.id !== selectedCategory.id));
             toast.success("Categoría eliminada");
             setDeleteCatModal(false);
