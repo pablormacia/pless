@@ -5,6 +5,7 @@ import {
   updateProductPrice,
   updateProductAvailability,
   updateProductImage,
+  createProduct
 } from "@/services/products";
 
 export function useProducts() {
@@ -14,5 +15,6 @@ export function useProducts() {
     updateProductPrice,
     updateProductAvailability,
     updateProductImage,
+    createProduct
   };
 }

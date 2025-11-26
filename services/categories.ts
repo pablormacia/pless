@@ -74,3 +74,32 @@ export async function deleteCategory(id: string) {
 
   if (error) throw error;
 }
+
+export async function deleteCategoryStorage(businessId: string, category: Category) {
+  const storage = supabase.storage.from("businesses");
+
+  const categoryFolder = `${businessId}/categories/${category.id}`;
+
+  // 1. Borrar carpeta de categoría
+  const { error: categoryErr } = await storage.remove([categoryFolder]);
+
+  if (categoryErr) {
+    console.error("Error removing CATEGORY folder:", categoryErr);
+  }
+
+  // 2. Borrar carpetas de productos
+  if (category.products) {
+    const productFolders = category.products.map(
+      (p) => `${businessId}/products/${p.id}`
+    );
+
+    if (productFolders.length > 0) {
+      const { error: prodErr } = await storage.remove(productFolders);
+
+      if (prodErr) {
+        console.error("Error removing PRODUCT folders:", prodErr);
+      }
+    }
+  }
+}
+
