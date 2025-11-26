@@ -145,17 +145,21 @@ export function ProductCard({
           </p>
 
           {/* Contador */}
-          <div className="flex items-center gap-2 mt-2">
-            <Button size="icon" variant="outline" onClick={decrease} className="h-8 w-8">
-              <Minus size={16} />
-            </Button>
+          {/* Contador: solo mostrar si NO está en modo menú */}
+          {view === "list" && (
+            <div className="flex items-center gap-2 mt-2">
+              <Button size="icon" variant="outline" onClick={decrease} className="h-8 w-8">
+                <Minus size={16} />
+              </Button>
 
-            <span className="w-8 text-center">{quantity}</span>
+              <span className="w-8 text-center">{quantity}</span>
 
-            <Button size="icon" variant="outline" onClick={increase} className="h-8 w-8">
-              <Plus size={16} />
-            </Button>
-          </div>
+              <Button size="icon" variant="outline" onClick={increase} className="h-8 w-8">
+                <Plus size={16} />
+              </Button>
+            </div>
+          )}
+
         </div>
 
         {/* Botón agregar */}
