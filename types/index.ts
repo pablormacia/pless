@@ -1,5 +1,6 @@
 export interface Product {
     id: string;
+    business_id:string;
     name: string;
     description: string | null;
     price: number;
@@ -8,7 +9,7 @@ export interface Product {
 }
 
 export interface Category {
-    id: number;
+    id: string;
     name: string;
     sort_order: number;
     products: Product[];
