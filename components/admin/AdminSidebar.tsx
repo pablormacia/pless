@@ -44,7 +44,7 @@ export function AdminSidebar({ open, setOpen, slug }: Props) {
             );
           })}
 
-          <Link href="/admin/logout" className="px-4 py-3 text-left text-red-600">Cerrar sesión</Link>
+          <Link href="/logout" className="px-4 py-3 text-left text-red-600">Cerrar sesión</Link>
         </nav>
       </SheetContent>
     </Sheet>
