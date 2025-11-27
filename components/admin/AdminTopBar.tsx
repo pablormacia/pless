@@ -4,12 +4,15 @@ import { Menu, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "./AdminSidebar";
 import { useParams } from "next/navigation";
+import { useUserStore } from "@/stores/userStore";
 import Link from "next/link";
 
 export default function AdminTopBar() {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
-  const [businessName, setBusinessName] = useState<string | null>(null);
+  const email = useUserStore((state) => state.email);
+  const businessName = useUserStore((state) => state.businessName);
+
+  const setUserData = useUserStore((state) => state.setUserData);
 
   const params = useParams();
   const slug = params.slug as string;
@@ -20,13 +23,18 @@ export default function AdminTopBar() {
       const data = await res.json();
 
       if (data.user) {
-        setEmail(data.user.email);
-        setBusinessName(data.user.businessName);
+        setUserData({
+          email: data.user.email,
+          businessId: data.user.businessId,
+          businessName: data.user.businessName,
+          slug: data.user.slug,
+        });
       }
     }
 
     load();
   }, []);
+
 
   return (
     <>
@@ -34,15 +42,14 @@ export default function AdminTopBar() {
 
         {/* IZQUIERDA — Icono menú + título */}
         <div className="flex items-center gap-3">
-          {/* Icono menú a la izquierda */}
           <button onClick={() => setOpen(true)}>
             <Menu size={24} />
           </button>
 
-          {/* Título y nombre del negocio */}
           <div className="flex flex-col leading-tight">
             <h1 className="font-semibold text-lg">Panel</h1>
 
+            {/* Nombre del negocio — visible solo en desktop */}
             {businessName && (
               <span className="text-xs text-slate-500 hidden sm:block">
                 {businessName}
@@ -51,17 +58,25 @@ export default function AdminTopBar() {
           </div>
         </div>
 
-        {/* DERECHA — Email + logout */}
-        <div className="flex items-center gap-4">
+        {/* DERECHA — info usuario + logout */}
+        <div className="flex flex-col sm:flex-row items-end sm:items-center sm:gap-4 leading-tight text-right">
 
-          {/* Email (solo desktop) */}
+          {/* MOBILE: negocio + email juntos */}
+          {businessName && email && (
+            <div className="flex flex-col text-[10px] text-slate-500 sm:hidden">
+              <span>{businessName}</span>
+              <span>{email}</span>
+            </div>
+          )}
+
+          {/* DESKTOP: email solo */}
           {email && (
             <span className="text-sm text-slate-600 hidden sm:block">
               {email}
             </span>
           )}
 
-          {/* Logout con icono + texto */}
+          {/* DESKTOP: botón salir */}
           <Link
             href="/logout"
             className="hidden sm:flex items-center gap-1 text-sm text-red-600 font-medium"

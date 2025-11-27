@@ -1,3 +1,4 @@
+//admin/layout
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import { Toaster } from "@/components/ui/sonner";
 

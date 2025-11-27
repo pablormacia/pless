@@ -18,8 +18,8 @@ export function AdminSidebar({ open, setOpen, slug }: Props) {
 
   const links = [
     { href: `/${slug}/admin`, label: "Dashboard" },
-    { href: `/${slug}/admin/productos`, label: "Productos y categorías" },
-    { href: `/${slug}/admin/ajustes`, label: "Ajustes" },
+    { href: `/${slug}/admin/`, label: "Productos y categorías" },
+   /*  { href: `/${slug}/admin/ajustes`, label: "Ajustes" }, */
   ];
 
   return (

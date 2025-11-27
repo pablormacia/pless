@@ -8,7 +8,7 @@ import {
   createProduct
 } from "@/services/products";
 
-export function useProducts() {
+export function useProducts(businessId?: string) {
   return {
     updateProduct,
     deleteProduct,

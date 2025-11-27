@@ -12,20 +12,23 @@ import {
 import { Category } from "@/types";
 import { getImageUrl } from "@/utils/getImageUrl";
 
-const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
+//const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
-export function useCategories() {
+export function useCategories(businessId?: string) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!businessId) return;   // espera hasta que esté cargado de verdad
     load();
-  }, []);
+  }, [businessId]);
 
   async function load() {
     setLoading(true);
+    if (!businessId) return;
+
     try {
-      const data = await getCategories();
+      const data = await getCategories(businessId);
 
       const processed = data.map(cat => ({
         ...cat,

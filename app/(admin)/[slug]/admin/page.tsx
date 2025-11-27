@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -24,14 +24,20 @@ import { Product, Category } from "@/types";
 import { getImageUrl } from "@/utils/getImageUrl";
 
 import { createProduct } from "@/services/products";
-import { deleteCategoryImage,deleteProductsOfCategory } from "@/services/categories";
+import { deleteCategoryImage, deleteProductsOfCategory } from "@/services/categories";
 
-const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
+import { useUserStore } from "@/stores/userStore";
+
+//const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
 export default function AdminProductosPage() {
     // ──────────────────────────────────────────
     // DATA
     // ──────────────────────────────────────────
+    const businessId = useUserStore((s) => s.businessId);
+    console.log(businessId)
+
+
 
     const {
         categories,
@@ -41,7 +47,7 @@ export default function AdminProductosPage() {
         deleteCategory: deleteCategoryService,
         updateCategoryName,
         updateCategoryImage,
-    } = useCategories();
+    } = useCategories(businessId ?? undefined);
 
     const {
         updateProduct,
@@ -83,6 +89,8 @@ export default function AdminProductosPage() {
     const [newProduct, setNewProduct] = useState<Product | null>(null);
 
 
+
+
     // ──────────────────────────────────────────
     // CATEGORY ACTIONS
     // ──────────────────────────────────────────
@@ -99,7 +107,8 @@ export default function AdminProductosPage() {
         if (!selectedCategory) return;
 
         try {
-            await updateCategoryName(selectedCategory.id, newCategoryName);
+            if (!businessId) return;  
+            await updateCategoryName(selectedCategory.id, newCategoryName,businessId);
 
             setCategories((prev) =>
                 prev.map((c) =>
@@ -125,9 +134,10 @@ export default function AdminProductosPage() {
         if (confirmDeleteCat !== "Confirmar") return toast.error("Texto incorrecto");
 
         try {
-            await deleteCategoryService(selectedCategory.id);
-            await deleteCategoryImage(selectedCategory.id);
-            await deleteProductsOfCategory(selectedCategory.products);
+            if (!businessId) return;  
+            await deleteCategoryService(selectedCategory.id,businessId);
+            await deleteCategoryImage(selectedCategory.id,businessId);
+            await deleteProductsOfCategory(selectedCategory.products,businessId);
             setCategories((prev) => prev.filter((c) => c.id !== selectedCategory.id));
             toast.success("Categoría eliminada");
             setDeleteCatModal(false);
@@ -151,7 +161,8 @@ export default function AdminProductosPage() {
             return toast.error("La categoría necesita un nombre");
 
         try {
-            const data = await createCategory(newCategoryName);
+            if (!businessId) return;  
+            const data = await createCategory(newCategoryName,businessId);
 
             setCategories((prev) => [
                 ...prev,
@@ -191,13 +202,14 @@ export default function AdminProductosPage() {
         if (!newProduct) return;
 
         try {
+            if (!businessId) return;  
             const created = await createProduct({
                 name: newProduct.name,
                 description: newProduct.description ?? "",
                 price: newProduct.price,
                 available: newProduct.available,
                 category_id: newProduct.category_id!,
-            });
+            },businessId);
 
             const fullProduct = {
                 ...created,
@@ -245,8 +257,9 @@ export default function AdminProductosPage() {
         if (!selectedProduct) return;
 
         try {
+            if (!businessId) return;
             const { id, image_url, ...fields } = selectedProduct;
-            await updateProduct(id, fields);
+            await updateProduct(id, fields,businessId);
 
             setCategories((prev) =>
                 prev.map((cat) => ({
@@ -276,7 +289,8 @@ export default function AdminProductosPage() {
             return toast.error("Texto incorrecto");
 
         try {
-            await deleteProductService(selectedProduct.id);
+            if (!businessId) return;
+            await deleteProductService(selectedProduct.id,businessId);
 
             setCategories((prev) =>
                 prev.map((cat) => ({
@@ -293,8 +307,9 @@ export default function AdminProductosPage() {
     };
 
     const toggleAvailable = async (product: Product, value: boolean) => {
+        if (!businessId) return;
         try {
-            await updateProductAvailability(product.id, value);
+            await updateProductAvailability(product.id, value,businessId);
 
             setCategories((prev) =>
                 prev.map((cat) => ({
@@ -372,16 +387,17 @@ export default function AdminProductosPage() {
                 onDelete={deleteCategoryHandler}
                 onClose={() => setDeleteCatModal(false)}
             />
-
+        {businessId && (
             <CategoryImageModal
                 open={imageCatModal}
                 category={selectedCategory}
                 businessId={businessId}
                 onUpload={async (url) => {
                     try {
+                        if (!businessId) return;  
                         const filename = url ? url.split("/").pop()! : null;
 
-                        await updateCategoryImage(selectedCategory!.id, filename);
+                        await updateCategoryImage(selectedCategory!.id, filename,businessId);
 
                         setCategories((prev) =>
                             prev.map((c) =>
@@ -406,7 +422,7 @@ export default function AdminProductosPage() {
                 }}
                 onClose={() => setImageCatModal(false)}
             />
-
+            )}
             <NewCategoryModal
                 open={newCategoryModal}
                 value={newCategoryName}
@@ -436,16 +452,17 @@ export default function AdminProductosPage() {
                 onDelete={deleteProductHandler}
                 onClose={() => setDeleteProductModal(false)}
             />
-
+        {businessId && (
             <ProductImageModal
                 open={productImageModal}
                 product={selectedProduct as Product}
                 businessId={businessId}
                 onUpload={async (url) => {
                     try {
+                        if (!businessId) return;  
                         const filename = url ? url.split("/").pop()! : null;
 
-                        await updateProductImage(selectedProduct!.id, filename);
+                        await updateProductImage(selectedProduct!.id, filename,businessId);
 
                         setCategories((prev) =>
                             prev.map((c) => ({
@@ -473,13 +490,15 @@ export default function AdminProductosPage() {
                 }}
                 onClose={() => setProductImageModal(false)}
             />
-            {priceProduct && (
+            )}
+
+            {priceProduct && businessId &&(
                 <ChangePriceModal
                     open={priceModalOpen}
                     setOpen={setPriceModalOpen}
                     product={priceProduct}
                     onSave={async (newPrice) => {
-                        await updateProductPrice(priceProduct.id, newPrice);
+                        await updateProductPrice(priceProduct.id, newPrice,businessId);
 
                         setCategories(prev =>
                             prev.map(cat => ({

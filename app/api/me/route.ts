@@ -22,13 +22,13 @@ export async function GET(request: Request) {
     }
   );
 
-  // Obtener user logueado
+  // Obtener user
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) {
     return NextResponse.json({ user: null });
   }
 
-  // Obtener business_id del user
+  // Buscar business_id del usuario
   const { data: userRow } = await supabase
     .from("users")
     .select("business_id")
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ user: null });
   }
 
-  // Obtener datos del negocio
+  // Buscar negocio
   const { data: business } = await supabase
     .from("businesses")
     .select("name, slug")
@@ -49,6 +49,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     user: {
       email: authData.user.email,
+      businessId: userRow.business_id,       // 👈 NUEVO
       businessName: business?.name ?? null,
       slug: business?.slug ?? null,
     },

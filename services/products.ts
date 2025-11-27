@@ -1,9 +1,9 @@
 // /services/products.ts
 import { supabase } from "@/lib/supabaseClient";
 
-const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
+//const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
-export async function updateProduct(id: string, fields: any) {
+export async function updateProduct(id: string, fields: any,businessId: string) {
   const { error } = await supabase
     .from("products")
     .update(fields)
@@ -13,7 +13,7 @@ export async function updateProduct(id: string, fields: any) {
   if (error) throw error;
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string,businessId: string) {
   const { error } = await supabase
     .from("products")
     .delete()
@@ -23,16 +23,16 @@ export async function deleteProduct(id: string) {
   if (error) throw error;
 }
 
-export async function updateProductPrice(id: string, price: number) {
-  return updateProduct(id, { price });
+export async function updateProductPrice(id: string, price: number,businessId: string) {
+  return updateProduct(id, { price },businessId);
 }
 
-export async function updateProductAvailability(id: string, available: boolean) {
-  return updateProduct(id, { available });
+export async function updateProductAvailability(id: string, available: boolean,businessId: string) {
+  return updateProduct(id, { available },businessId);
 }
 
-export async function updateProductImage(id: string, filename: string | null) {
-  return updateProduct(id, { image_url: filename });
+export async function updateProductImage(id: string, filename: string | null,businessId: string) {
+  return updateProduct(id, { image_url: filename },businessId);
 }
 
 export async function createProduct(fields: {
@@ -41,13 +41,14 @@ export async function createProduct(fields: {
   price: number;
   available: boolean;
   category_id: string;
-}) {
+},
+businessId: string) {
   const { data, error } = await supabase
     .from("products")
     .insert({
       ...fields,
-      business_id: businessId,
       image_url: null,
+      business_id: businessId,
     })
     .select()
     .single();

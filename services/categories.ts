@@ -2,9 +2,9 @@
 import { supabase } from "@/lib/supabaseClient";
 import { Category, Product } from "@/types";
 
-const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
+//const businessId = "c8e43f7a-331d-49bd-ac63-a88a2d69b600";
 
-export async function getCategories() {
+export async function getCategories(businessId: string) {
   const { data, error } = await supabase
     .from("categories")
     .select(`
@@ -29,7 +29,7 @@ export async function getCategories() {
   return data as Category[];
 }
 
-export async function createCategory(name: string) {
+export async function createCategory(name: string,businessId: string) {
   const { data, error } = await supabase
     .from("categories")
     .insert({
@@ -45,7 +45,7 @@ export async function createCategory(name: string) {
   return data;
 }
 
-export async function updateCategoryName(id: string, name: string) {
+export async function updateCategoryName(id: string, name: string,businessId: string) {
   const { error } = await supabase
     .from("categories")
     .update({ name })
@@ -55,7 +55,7 @@ export async function updateCategoryName(id: string, name: string) {
   if (error) throw error;
 }
 
-export async function updateCategoryImage(id: string, filename: string | null) {
+export async function updateCategoryImage(id: string, filename: string | null,businessId: string) {
   const { error } = await supabase
     .from("categories")
     .update({ image_url: filename })
@@ -65,7 +65,7 @@ export async function updateCategoryImage(id: string, filename: string | null) {
   if (error) throw error;
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: string,businessId: string) {
   const { error } = await supabase
     .from("categories")
     .delete()
@@ -75,7 +75,7 @@ export async function deleteCategory(id: string) {
   if (error) throw error;
 }
 
-export const deleteCategoryImage = async (categoryId: string) => {
+export const deleteCategoryImage = async (categoryId: string,businessId: string) => {
   const basePath = `${businessId}/categories/${categoryId}`;
 
   const { data: files, error } = await supabase.storage
@@ -100,7 +100,7 @@ export const deleteCategoryImage = async (categoryId: string) => {
   }
 };
 
-export const deleteProductsOfCategory = async (products: Product[]) => {
+export const deleteProductsOfCategory = async (products: Product[],businessId: string) => {
   for (const p of products) {
     const basePath = `${businessId}/products/${p.id}`;
 
