@@ -9,16 +9,17 @@ export default function ClientLayout({
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 antialiased">
       {children}
+
       <Toaster
-        position="bottom-center"              
+        position="bottom-center"
         toastOptions={{
           style: {
-            width: "60%",            
-            maxWidth: "400px", 
+            width: "60%",
+            maxWidth: "400px",
           },
-          
         }}
       />
+
       <CartDrawer />
     </div>
   );

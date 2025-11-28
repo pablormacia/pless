@@ -2,6 +2,5 @@
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  /* redirect("/pless-resto-demo"); */
-  <></>
+  redirect("/pless-resto-demo"); 
 }

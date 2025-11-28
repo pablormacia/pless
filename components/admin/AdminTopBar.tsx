@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut,Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AdminSidebar } from "./AdminSidebar";
 import { useParams } from "next/navigation";
@@ -14,8 +14,7 @@ export default function AdminTopBar() {
 
   const setUserData = useUserStore((state) => state.setUserData);
 
-  const params = useParams();
-  const slug = params.slug as string;
+  const slug = useUserStore((s) => s.slug);
 
   useEffect(() => {
     async function load() {
@@ -76,6 +75,18 @@ export default function AdminTopBar() {
             </span>
           )}
 
+          {slug && (
+            <Link
+              href={`/${slug}`}
+              target="_blank"
+              className="hidden sm:flex items-center gap-1 text-sm text-blue-600 font-medium"
+            >
+              <Globe size={16} />
+              Ir al sitio
+            </Link>
+          )}
+
+
           {/* DESKTOP: botón salir */}
           <Link
             href="/logout"
@@ -87,7 +98,7 @@ export default function AdminTopBar() {
         </div>
       </header>
 
-      <AdminSidebar open={open} setOpen={setOpen} slug={slug} />
+      <AdminSidebar open={open} setOpen={setOpen} />
     </>
   );
 }

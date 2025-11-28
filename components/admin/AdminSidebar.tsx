@@ -5,16 +5,17 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useUserStore } from "@/stores/userStore";
 
 
 interface Props {
   open: boolean;
   setOpen: (v: boolean) => void;
-  slug: string;
 }
 
-export function AdminSidebar({ open, setOpen, slug }: Props) {
+export function AdminSidebar({ open, setOpen}: Props) {
   const pathname = usePathname();
+  const slug = useUserStore((s) => s.slug);
 
   const links = [
     { href: `/${slug}/admin`, label: "Dashboard" },
